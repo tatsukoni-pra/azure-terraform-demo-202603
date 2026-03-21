@@ -84,6 +84,7 @@ az storage account create \
   --sku Standard_GRS \
   --min-tls-version TLS1_2 \
   --allow-blob-public-access false \
+  --allow-cross-tenant-replication true \
   --tags env=dev service=tatsukoni
 
 # Blob versioningの有効化
@@ -138,6 +139,7 @@ az storage account create \
   --sku Standard_GRS \
   --min-tls-version TLS1_2 \
   --allow-blob-public-access false \
+  --allow-cross-tenant-replication true \
   --tags env=prd service=tatsukoni
 
 # Blob versioningの有効化
@@ -152,6 +154,21 @@ az storage container create \
   --account-name sttatsukoniprdtfstate
 
 # prd環境で初期化
+# StorageAccount：sttatsukoniprdtfstate 内に、tfstateファイルが生成される
+terraform init -reconfigure -backend-config=tfbackend/prd.tfbackend
+
+# Terraformへインポート（Storage AccountはTerraformで管理するため）
+# StorageAccount：sttatsukoniprdtfstate 内に、main.tf の StorageAccount 定義がimportされる
+terraform import \
+  -var env=prd \
+  azurerm_storage_account.tfstate \
+  /subscriptions/ba29533e-1e4c-43a8-898a-a5815e9b577b/resourceGroups/rg-tatsukoni-prd/providers/Microsoft.Storage/storageAccounts/sttatsukoniprdtfstate
+```
+
+### リソース操作(prd環境)
+
+```bash
+# tfstateの向き先をprd環境に変更
 terraform init -reconfigure -backend-config=tfbackend/prd.tfbackend
 
 # planで確認
