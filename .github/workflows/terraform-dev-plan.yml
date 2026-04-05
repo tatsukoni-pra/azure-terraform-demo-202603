@@ -42,6 +42,6 @@ jobs:
 
     - name: terraform init
       run: terraform init -reconfigure -backend-config=tfbackend/${{ env.TF_ENV }}.tfbackend
-   
-    - name: terraform remote plan
+
+    - name: terraform plan
       run: terraform plan -var env=${{ env.TF_ENV }}

@@ -2,6 +2,15 @@ name: Terraform Apply (dev)
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: '実行モード'
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: 'dry-run'
 
 env:
   TF_ENV: "dev"
@@ -9,7 +18,7 @@ env:
 
 jobs:
   terraform-init-and-apply:
-    name: 'terraform init and apply'
+    name: 'terraform ${{ github.event.inputs.mode }} (dev)'
     runs-on: ubuntu-latest
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID_DEV }}
@@ -30,5 +39,22 @@ jobs:
       - name: terraform init
         run: terraform init -reconfigure -backend-config=tfbackend/${{ env.TF_ENV }}.tfbackend
 
-      - name: terraform apply
-        run: terraform apply -var env=${{ env.TF_ENV }} -auto-approve
+      - name: terraform plan (create plan file)
+        run: terraform plan -var env=${{ env.TF_ENV }} -out=tfplan
+
+      - name: terraform show (dry-run)
+        if: github.event.inputs.mode == 'dry-run'
+        run: |
+          echo "=== Terraform Apply 実行予定 (dry-run) ==="
+          terraform show tfplan
+          echo ""
+          echo "✓ 上記の変更が terraform apply で実行されます"
+          echo "✓ 実際のリソースへの変更は行われていません"
+
+      - name: terraform apply (execute plan)
+        if: github.event.inputs.mode == 'apply'
+        run: |
+          echo "=== Terraform Apply 実行中 ==="
+          terraform apply tfplan
+          echo ""
+          echo "✓ 変更が正常に適用されました"
