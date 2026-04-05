@@ -1,52 +1,47 @@
 name: Terraform Plan (prd)
 
 on:
-  workflow_dispatch:  # KÕŸL’	¹
+  workflow_dispatch:
 
-permissions:
-  contents: read
-  pull-requests: write
+env:
+  TF_ENV: "prd"
+  TF_VERSION: "1.14.0"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID_PRD }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET_PRD }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
 jobs:
-  terraform-plan:
-    name: Terraform Plan - prd
+  terraform-format:
+    name: 'terraform format'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: checkout
+      uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
+    - name: setup terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS_PRD }}
+    - name: terraform format
+      run: terraform fmt -recursive -diff -check
 
-      - name: Terraform Init (prd)
-        run: |
-          terraform init -reconfigure -backend-config=tfbackend/prd.tfbackend
-        env:
-          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRD }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_PRD }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  terraform-init-and-plan:
+    name: 'terraform init and plan'
+    runs-on: ubuntu-latest
+    needs: terraform-format
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
 
-      - name: Terraform Plan (prd)
-        run: |
-          terraform plan -var env=prd -out=tfplan
-        env:
-          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRD }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_PRD }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    - name: setup terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Upload Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan-prd
-          path: tfplan
-          retention-days: 5
+    - name: terraform init
+      run: terraform init -reconfigure -backend-config=tfbackend/${{ env.TF_ENV }}.tfbackend
+
+    - name: terraform plan
+      run: terraform plan -var env=${{ env.TF_ENV }}

@@ -1,45 +1,60 @@
 name: Terraform Apply (prd)
 
 on:
-  workflow_dispatch:  # K՟L�	�
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '実行モード'
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: 'dry-run'
 
-permissions:
-  contents: read
+env:
+  TF_ENV: "prd"
+  TF_VERSION: "1.14.0"
 
 jobs:
-  terraform-apply:
-    name: Terraform Apply - prd
+  terraform-init-and-apply:
+    name: 'terraform ${{ github.event.inputs.mode }} (prd)'
     runs-on: ubuntu-latest
-    environment: production  # ���w���(Y�4
-
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID_PRD }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET_PRD }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
     steps:
-      - name: Checkout code
+      - name: checkout
         uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          fetch-depth: 0
 
-      - name: Azure Login
-        uses: azure/login@v2
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS_PRD }}
+          terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform Init (prd)
-        run: |
-          terraform init -reconfigure -backend-config=tfbackend/prd.tfbackend
-        env:
-          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRD }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_PRD }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      - name: terraform init
+        run: terraform init -reconfigure -backend-config=tfbackend/${{ env.TF_ENV }}.tfbackend
 
-      - name: Terraform Apply (prd)
+      - name: terraform plan (create plan file)
+        run: terraform plan -var env=${{ env.TF_ENV }} -out=tfplan
+
+      - name: terraform show (dry-run)
+        if: github.event.inputs.mode == 'dry-run'
         run: |
-          terraform apply -var env=prd -auto-approve
-        env:
-          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRD }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_PRD }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          echo "=== Terraform Apply 実行予定 (dry-run) ==="
+          terraform show tfplan
+          echo ""
+          echo "✓ 上記の変更が terraform apply で実行されます"
+          echo "✓ 実際のリソースへの変更は行われていません"
+
+      - name: terraform apply (execute plan)
+        if: github.event.inputs.mode == 'apply'
+        run: |
+          echo "=== Terraform Apply 実行中 ==="
+          terraform apply tfplan
+          echo ""
+          echo "✓ 変更が正常に適用されました"
