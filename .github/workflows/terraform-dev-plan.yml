@@ -1,0 +1,47 @@
+name: Terraform Plan (dev)
+
+on:
+  workflow_dispatch:
+
+env:
+  TF_ENV: "dev"
+  TF_VERSION: "1.14.0"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID_DEV }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET_DEV }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+
+jobs:
+  terraform-format:
+    name: 'terraform format'
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: setup terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: terraform format
+      run: terraform fmt -recursive -diff -check
+
+  terraform-init-and-plan:
+    name: 'terraform init and plan'
+    runs-on: ubuntu-latest
+    needs: terraform-format
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: setup terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: terraform init
+      run: terraform init -reconfigure -backend-config=tfbackend/${{ env.TF_ENV }}.tfbackend
+   
+    - name: terraform remote plan
+      run: terraform plan -var env=${{ env.TF_ENV }}

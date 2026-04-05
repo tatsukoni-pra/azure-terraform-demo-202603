@@ -25,4 +25,19 @@ resource "azurerm_cosmosdb_account" "cosmosdb_account_test" {
     location          = var.resource_group.location
     failover_priority = local.failover_priority
   }
+
+  # prd以外: サーバーレス容量プラン（使った分だけ課金）
+  dynamic "capabilities" {
+    for_each = var.env != "prd" ? [1] : []
+    content {
+      name = "EnableServerless"
+    }
+  }
+
+  backup {
+    type                = "Periodic"
+    interval_in_minutes = 60
+    retention_in_hours  = 720
+    storage_redundancy  = "Geo"
+  }
 }

@@ -8,11 +8,15 @@
 - tfstate用ストレージ: `sttatsukonidevtfstate`
 - VNet: `vnet-tatsukoni-dev` (アドレス空間: `10.0.0.0/16`)
 - Cosmos DBアカウント: `tatsukoni-test-dev`
-  - データベース: `TestDatabase` (AutoScaling: 100-1000 RU/s)
+  - 容量モード: サーバーレス（使った分だけ課金）
+  - バックアップ: 定期バックアップ（60分間隔、720時間保持、Geo冗長）
+  - データベース: `TestDatabase` (スループット設定なし)
     - コンテナ: `TestContainerApp` (パーティションキー: `/id`)
     - コンテナ: `TestContainerFront` (パーティションキー: `/userId`)
 - Cosmos DBアカウント: `tatsukoni-feat-dev`
-  - データベース: `FeatDatabase` (AutoScaling: 100-1000 RU/s)
+  - 容量モード: サーバーレス（使った分だけ課金）
+  - バックアップ: 定期バックアップ（60分間隔、720時間保持、Geo冗長）
+  - データベース: `FeatDatabase` (スループット設定なし)
     - コンテナ: `FeatContainerApp` (パーティションキー: `/id`)
     - コンテナ: `FeatContainerFront` (パーティションキー: `/userId`)
 
@@ -22,11 +26,15 @@
 - tfstate用ストレージ: `sttatsukoniprdtfstate`
 - VNet: `vnet-tatsukoni-prd` (アドレス空間: `10.1.0.0/16`)
 - Cosmos DBアカウント: `tatsukoni-test-prd`
-  - データベース: `TestDatabase` (AutoScaling: 100-1000 RU/s)
+  - 容量モード: プロビジョニングされたスループット
+  - バックアップ: 定期バックアップ（60分間隔、720時間保持、Geo冗長）
+  - データベース: `TestDatabase` (AutoScaling: 最大1000 RU/s)
     - コンテナ: `TestContainerApp` (パーティションキー: `/id`)
     - コンテナ: `TestContainerFront` (パーティションキー: `/userId`)
 - Cosmos DBアカウント: `tatsukoni-feat-prd`
-  - データベース: `FeatDatabase` (AutoScaling: 100-1000 RU/s)
+  - 容量モード: プロビジョニングされたスループット
+  - バックアップ: 定期バックアップ（60分間隔、720時間保持、Geo冗長）
+  - データベース: `FeatDatabase` (AutoScaling: 最大1000 RU/s)
     - コンテナ: `FeatContainerApp` (パーティションキー: `/id`)
     - コンテナ: `FeatContainerFront` (パーティションキー: `/userId`)
 

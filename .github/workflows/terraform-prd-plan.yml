@@ -1,0 +1,52 @@
+name: Terraform Plan (prd)
+
+on:
+  workflow_dispatch:  # KÕŸL’	¹
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan - prd
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_PRD }}
+
+      - name: Terraform Init (prd)
+        run: |
+          terraform init -reconfigure -backend-config=tfbackend/prd.tfbackend
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRD }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_PRD }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Terraform Plan (prd)
+        run: |
+          terraform plan -var env=prd -out=tfplan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRD }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_PRD }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-prd
+          path: tfplan
+          retention-days: 5

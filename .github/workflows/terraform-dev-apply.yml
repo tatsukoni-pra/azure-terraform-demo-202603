@@ -1,0 +1,34 @@
+name: Terraform Apply (dev)
+
+on:
+  workflow_dispatch:
+
+env:
+  TF_ENV: "dev"
+  TF_VERSION: "1.14.0"
+
+jobs:
+  terraform-init-and-apply:
+    name: 'terraform init and apply'
+    runs-on: ubuntu-latest
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID_DEV }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET_DEV }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform init
+        run: terraform init -reconfigure -backend-config=tfbackend/${{ env.TF_ENV }}.tfbackend
+
+      - name: terraform apply
+        run: terraform apply -var env=${{ env.TF_ENV }} -auto-approve
