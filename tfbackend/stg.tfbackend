@@ -1,0 +1,4 @@
+resource_group_name  = "rg-tatsukoni-stg"
+storage_account_name = "sttatsukonistgtfstate"
+container_name       = "tfstate"
+key                  = "terraform.tfstate"
