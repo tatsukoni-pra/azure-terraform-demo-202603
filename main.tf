@@ -4,6 +4,7 @@ module "cosmosdb" {
 }
 
 module "vnet" {
+  count  = var.env != "stg" ? 1 : 0 # stg環境ではVNetを作成しない
   source = "./vnet"
   env    = var.env
 }
