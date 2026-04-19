@@ -1,13 +1,19 @@
-# module "cosmosdb" {
-#   source = "./cosmosdb"
-#   env    = var.env
-# }
+module "apim" {
+  count  = var.env == "dev" ? 1 : 0
+  source = "./apim"
+  env    = var.env
+}
 
-# module "vnet" {
-#   count  = var.env != "stg" ? 1 : 0 # stg環境ではVNetを作成しない
-#   source = "./vnet"
-#   env    = var.env
-# }
+module "cosmosdb" {
+  source = "./cosmosdb"
+  env    = var.env
+}
+
+module "vnet" {
+  count  = var.env != "stg" ? 1 : 0 # stg環境ではVNetを作成しない
+  source = "./vnet"
+  env    = var.env
+}
 
 ## データ参照 リソースグループ
 data "azurerm_resource_group" "rg_tatsukoni" {
